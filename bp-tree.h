@@ -11,10 +11,11 @@ class BpTree {
     struct Node {
         // Node básico padrão
         bool leaf;
-        int nChildren;
         vector<K> key;
         vector<Node*> children;
         vector<K> value;
+        Node* parent;
+        Node* nextleaf;
 
         Node(int);
     };
@@ -28,14 +29,18 @@ public:
 
     bool find(K x);
 
-    // Encontra a posição de insert
-    Node* findPos(K x);
-
     void insert(K x);
 
     void remove(K x);
 
     void print();
+
+    private:
+    // Encontra a posição de insert
+    Node* findPos(K x);
+
+    // Insere a chave no nó p
+    int insertInto(Node* p, K x);
 };
 
 #include "bp-tree.hpp"
