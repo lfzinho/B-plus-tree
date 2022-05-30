@@ -6,14 +6,14 @@
 
 using namespace std;
 
-template<class K>
+template<class K, class V>
 class BpTree {
     struct Node {
         // Node básico padrão
         bool leaf;
         vector<K> key;
+        vector<V> value;
         vector<Node*> children;
-        vector<K> value;
         Node* parent;
         Node* nextleaf;
 
@@ -29,18 +29,29 @@ public:
 
     bool find(K x);
 
-    void insert(K x);
+    vector<K> findRange(K k1, K k2);
 
-    void remove(K x);
+    void insert(K x, V v);
+
+    void remove(K x, V v);
 
     void print();
 
     private:
-    // Encontra a posição de insert
-    Node* findPos(K x);
+    // Encontra o nó de insert
+    Node* searchNode(K x);
 
     // Insere a chave no nó p
-    int insertInto(Node* p, K x);
+    void insertIntoLeaf(Node* p, K x, V v);
+
+    // Insere a chave no nó pai p
+    void insertIntoParent(Node* p, Node* q, K x);
+
+    // Remove a chave no nó p
+    void removeKey(Node* p, K x, V v);
+
+    // Retorna posição de divisão do nó no split
+    int getDivision();
 };
 
 #include "bp-tree.hpp"

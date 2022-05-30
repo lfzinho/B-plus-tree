@@ -2,11 +2,10 @@
 #include <random>
 
 int main() {
-    BpTree<int>* tree = new BpTree<int>(5);
-    srand(0);
+    BpTree<int, int>* tree = new BpTree<int, int>(5);
     for (int i=0; i<20; i++) {
-        int key = rand()%20;
         cout << i << endl;
-        tree->insert(i);
+        tree->insert(i, i);
     }
+    
 }
