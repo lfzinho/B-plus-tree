@@ -33,7 +33,7 @@ public:
 
     void insert(K x, V v);
 
-    void remove(K x, V v);
+    void remove(K x);
 
     void print();
 
@@ -52,6 +52,9 @@ public:
 
     // Retorna posição de divisão do nó no split
     int getDivision();
+
+    // Retorna o valor mínimo de chaves que determina se um nó será reestruturado
+    int getThreshold(bool leaf);
 };
 
 #include "bp-tree.hpp"

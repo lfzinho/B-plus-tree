@@ -7,5 +7,4 @@ int main() {
         cout << i << endl;
         tree->insert(i, i);
     }
-    
 }

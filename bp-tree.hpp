@@ -193,11 +193,29 @@ int BpTree<K, V>::getDivision() {
 }
 
 template<class K, class V>
-void BpTree<K, V>::remove(K x, V v = NULL) {
+int BpTree<K, V>::getThreshold(bool leaf) {
+    if (leaf){
+        if (node_len%2 == 0) {
+            return (node_len)/2;
+        } else {
+            return (node_len-1)/2;
+        }
+    } else {
+        if (node_len%2 == 0) {
+            return (node_len)/2;
+        } else {
+            return (node_len+1)/2;
+        }
+    }
+}
+
+template<class K, class V>
+void BpTree<K, V>::remove(K x) {
+    V v = NULL;
     Node* p = searchNode(x);
 
     for (int i=0; i<p->key.size(); i++) {
-        if (p->key[i] == x && (p->value = NULL || p->value[i] == v)) { // se encontrar a posição
+        if (p->key[i] == x) { // se encontrar a posição
             if (p == root) {
                 // e estiver na raiz, apaga
                 auto posk = p->key.begin() + i;
@@ -206,6 +224,8 @@ void BpTree<K, V>::remove(K x, V v = NULL) {
                 p->value.erase(posv);
             } else {
                 // e estiver em outro nível, executa removeKey
+                auto posk = p->key.begin() + i;
+                auto posv = p->value.begin() + i;
                 p->key.erase(posk);
                 p->value.erase(posv);
                 removeKey(p, x, v);          
@@ -215,4 +235,189 @@ void BpTree<K, V>::remove(K x, V v = NULL) {
 }
 
 template<class K, class V>
-void BpTree<K, V>::removeKey(Node* p, K x, V v) {}
+void BpTree<K, V>::removeKey(Node* p, K x, V v) {
+
+    // se passarmos por um nó que não é folha
+    if (!p->leaf){
+        for (int i=0; i<p->key.size(); i++) {
+            // remove o valor do nó
+            if (p->key[i] = x) {
+                auto posk = p->key.begin() + i;
+                auto posv = p->value.begin() + i;
+                p->key.erase(posk);
+                p->value.erase(posv);
+            }
+        }
+    }
+
+    // se estivermos deletando a única chave na árvore
+    if (p == root && p->children.size() == 1) {
+        // transformamos a primeira children em root
+        root = p->children[0];
+        p->children.parent = nullptr;
+        // e deletamos a root
+        delete root;
+        return;
+    }
+
+    // se o nó não for raiz
+    if (p != root) {
+        if ( (!(p->leaf) && (p->children.size() < getThreshold(p->leaf))) // se o nó não for folha e condição1
+        || ((p->leaf) && (p->children.size() < getThreshold(p->leaf))) // ou se o nó for folha e condição2
+        ) {
+            // Define variáveis auxiliares
+            bool is_predecessor = false;
+            Node* parentNode = p->parent;
+            Node* PrevNode = nullptr;
+            Node* NextNode = nullptr;
+            Node* ndash = nullptr;
+            K PrevK = NULL;
+            K NextK = NULL;
+            K value_ = NULL;
+
+            // localiza a posição do nó em relação ao pai
+            for (int i=0; i<parentNode->children.size(); i++) {
+                if (parentNode->children[i] == p) {
+                    // i é a posição do nó
+                    if (i > 0) {
+                        PrevNode = parentNode->children[i-1];
+                        PrevK = parentNode->key[i-1];
+                    }
+                    if ( i < parentNode->key.size() -1) {
+                        NextNode = parentNode->children[i+1];
+                        NextK = parentNode->value[i];
+                    }
+                }
+            }
+
+            if (PrevNode == nullptr) {
+                ndash = NextNode;
+                value_ = NextK;
+            } else if (NextNode == nullptr) {
+                is_predecessor = true;
+                ndash = PrevNode;
+                value_ = PrevK;
+            } else {
+                if (p->key.size() + NextNode->key.size() < node_len) {
+                    ndash = NextNode;
+                    value_ = NextK;
+                } else {
+                    is_predecessor = true;
+                    ndash = PrevNode;
+                    value_ = PrevK;
+                }
+            }
+            
+            if (p->key.size() + ndash->key.size() < node_len) {
+                if (!is_predecessor) {
+                    Node* placeholder = p;
+                    p = ndash;
+                    ndash = placeholder;
+                }
+                for (int i=0; i<p->children.size(); i++) {
+                    ndash->children.push_back(p->children[i]);
+                }
+                if (!p->leaf) {
+                    ndash->key.append(value_);
+                } else {
+                    ndash->nextleaf = p->nextleaf;
+                }
+                for (int i=0; i<p->key.size(); i++) {
+                    ndash->key.push_back(p->key[i]);
+                }
+
+                if (!ndash->leaf) {
+                    // corrige os parentescos
+                    for (int i=0; i<ndash->children.size(); i++) {
+                        ndash->children[i]->parent = ndash;
+                    }
+                }
+                removeKey(p->parent, value_, v);
+                delete p;
+
+            } else { 
+                if (is_predecessor) {
+                    if (!p->leaf) {
+                        Node* ndashpn = ndash->children.back();
+                        ndash->children.pop_back();
+                        K ndashkn = ndash->key.back();
+                        ndash->key.pop_back();
+
+                        p->children.insert(p->children.begin(), ndashpn);
+                        p->key.insert(p->key.begin(), ndashkn);
+                        parentNode = p->parent;
+                        for (int i=0; i<parentNode->key.size(); i++) {
+                            if (parentNode->key[i] == value_) {
+                                parentNode->key[i] = ndashkn;
+                                break;
+                            }
+                        }
+                    } else {
+                        Node* ndashpn = ndash->children.back();
+                        ndash->children.pop_back();
+                        K ndashkn = ndash->key.back();
+                        ndash->key.pop_back();
+
+                        p->children.insert(p->children.begin(), ndashpn);
+                        p->key.insert(p->key.begin(), ndashkn);
+                        parentNode = p->parent;
+                        for (int i=0; i<p->key.size(); i++) {
+                            if (parentNode->key[i] == value_) {
+                                parentNode->key[i] = ndashkn;
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    if (!p->leaf) {
+                        Node* ndashpn = ndash->children.front();
+                        ndash->children.pop_front();
+                        K ndashkn = ndash->key.front();
+                        ndash->key.pop_front();
+
+                        p->children.push_back(ndashpn);
+                        p->key.push_back(ndashkn);
+                        parentNode = p->parent;
+                        for (int i=0; i<parentNode->key.size(); i++) {
+                            if (parentNode->key[i] == value_) {
+                                parentNode->key[i] = ndashkn;
+                                break;
+                            }
+                        }
+                    } else {
+                        Node* ndashpn = ndash->children.front();
+                        ndash->children.pop_front();
+                        K ndashkn = ndash->key.front();
+                        ndash->key.pop_front();
+
+                        p->children.push_back(ndashpn);
+                        p->key.push_back(ndashkn);
+                        parentNode = p->parent;
+                        for (int i=0; i<parentNode->key.size(); i++) {
+                            if (parentNode->key[i] == value_) {
+                                parentNode->key[i] = ndashkn;
+                                break;
+                            }
+                        }
+                    }
+                }
+            
+                if (!ndash->leaf) {
+                    for (int i=0; i<ndash->children.size(); i++) {
+                        ndash->children[i]->parent = ndash;
+                    }
+                }
+                if (!p->leaf) {
+                    for (int i=0; i<p->children.size(); i++) {
+                        p->children[i]->parent = p;
+                    }
+                }
+                if (!parentNode->leaf) {
+                    for (int i=0; i<parentNode->children.size(); i++) {
+                        parentNode->children[i]->parent = parentNode;
+                    }
+                }
+            } 
+        }
+    }
+}
