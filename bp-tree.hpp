@@ -75,19 +75,23 @@ void BpTree<K, V>::insert(K x, V v) {
         // distribui os valores de p overflowed entre p e q
         K middle_value;
         vector<K> p_keys;
+        vector<V> p_values;
         vector<Node*> p_children;
         p_keys.reserve(node_len);
         p_children.reserve(node_len+1);
         for (int i=0; i<p->key.size(); i++) {
             if (i < div) {
                 p_keys.push_back(p->key[i]);
+                p_values.push_back(p->value[i]);
                 p_children.push_back(p->children[i]);
             } else if (i == div) {
                 p_keys.push_back(p->key[i]);
+                p_values.push_back(p->value[i]);
                 p_children.push_back(p->children[i]);
                 middle_value = p->key[i];
             } else {
                 q->key.push_back(p->key[i]);
+                q->value.push_back(p->value[i]);
                 q->children.push_back(q->children[i]);
             }
         }

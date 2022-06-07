@@ -13,8 +13,4 @@ int main() {
     for (int x : respostaFindRange) {
         cout << x << endl;
     }
-
-    for (int i=0; i<20; i++) {
-        tree->remove(i);
-    }
 }
