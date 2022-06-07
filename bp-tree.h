@@ -27,9 +27,9 @@ public:
     // Constructor
     explicit BpTree(int node_len);
 
-    bool find(K x);
+    V find(K x);
 
-    vector<K> findRange(K k1, K k2);
+    vector<V> findRange(K k1, K k2);
 
     void insert(K x, V v);
 
@@ -48,7 +48,7 @@ public:
     void insertIntoParent(Node* p, Node* q, K x);
 
     // Remove a chave no nó p
-    void removeKey(Node* p, K x, V v);
+    void removeKey(Node* p, K x);
 
     // Retorna posição de divisão do nó no split
     int getDivision();

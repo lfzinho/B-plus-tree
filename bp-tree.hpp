@@ -6,7 +6,7 @@ using namespace std;
 
 template<class K, class V>
 BpTree<K, V>::Node::Node(int size) {
-    leaf = true;
+    leaf = false;
     children.reserve(size+1);
     key.reserve(size);
     value.reserve(size);
@@ -18,18 +18,46 @@ template<class K, class V>
 BpTree<K, V>::BpTree(int node_len) {
     node_len = node_len;
     root = new BpTree::Node(node_len);
+    root->leaf = true;
 }
 
 template<class K, class V>
-bool BpTree<K, V>::find(K x) {
+V BpTree<K, V>::find(K x) {
     Node* p = searchNode(x);
     // procura pela chave no nó ideal
     for (int i=0; i < p->key.size(); i++) {
         if (x == p->key[i]) {
-            return true;
+            return p->value[i];
         }
     }
-    return false;
+    return NULL;
+}
+
+template<class K, class V>
+vector<V> BpTree<K, V>::findRange(K x1, K x2) {
+    vector<V> result;
+
+    // procura pela menor chave
+    Node* p = searchNode(x1);
+    for (int i=0; i < p->key.size(); i++) {
+        if (p->key[i] >= x1) {
+            int j = i; // adiciona um novo iterador
+            // começa a adicionar as respostas a um vetor
+            while ((p->key[j] <= x2) && (p != nullptr)) {
+                result.push_back(p->value[j]);
+                j++;
+                // se o elemento j sai dos limites do nó
+                if (j > p->key.size()-1) {
+                    // reseta j e avança p
+                    j = 0;
+                    p = p->nextleaf;
+                }
+            }
+            break; // sai do loop depois que o while termina
+        }
+    }
+
+    return result;
 }
 
 template<class K, class V>
@@ -40,6 +68,7 @@ void BpTree<K, V>::insert(K x, V v) {
     // Se o nó der overflow:
     if (p->key.size() == node_len) {
         Node* q = new Node(node_len);
+        q->leaf = true;
         q->parent = p->parent;
         int div = getDivision();
 
@@ -50,9 +79,13 @@ void BpTree<K, V>::insert(K x, V v) {
         p_keys.reserve(node_len);
         p_children.reserve(node_len+1);
         for (int i=0; i<p->key.size(); i++) {
-            if (i <= div) {
+            if (i < div) {
                 p_keys.push_back(p->key[i]);
                 p_children.push_back(p->children[i]);
+            } else if (i == div) {
+                p_keys.push_back(p->key[i]);
+                p_children.push_back(p->children[i]);
+                middle_value = p->key[i];
             } else {
                 q->key.push_back(p->key[i]);
                 q->children.push_back(q->children[i]);
@@ -127,7 +160,7 @@ void BpTree<K, V>::insertIntoParent(Node* p, Node* q, K x) {
     } else {
         // Se a child original era um nó comum
         Node* r = p->parent;
-        for (int i; i<r->children.size(); i++) {
+        for (int i=0; i<r->children.size(); i++) {
             if (r->children[i] == p) {
                 auto pos_k = r->key.begin()+i;
                 auto pos_c = r->children.begin()+i;
@@ -145,7 +178,7 @@ void BpTree<K, V>::insertIntoParent(Node* p, Node* q, K x) {
                     vector<Node*> r_children;
                     r_keys.reserve(node_len);
                     r_keys.reserve(node_len+1);
-                    for (int j=0; j<r->key.size(); j++) {
+                    for (int j=0; j<r->children.size(); j++) {
                         if (j < div) {
                             // valores abaixo da div
                                 r_keys.push_back(r->key[j]);
@@ -159,7 +192,9 @@ void BpTree<K, V>::insertIntoParent(Node* p, Node* q, K x) {
                             middle_value = r->key[j];
                         } else {
                             // valores acima da div
-                            q2->key.push_back(r->key[j]);
+                            if (j < r->key.size()) {
+                                q2->key.push_back(r->key[j]);
+                            }
                             q2->children.push_back(r->children[j]);
                         }
                     }
@@ -211,7 +246,6 @@ int BpTree<K, V>::getThreshold(bool leaf) {
 
 template<class K, class V>
 void BpTree<K, V>::remove(K x) {
-    V v = NULL;
     Node* p = searchNode(x);
 
     for (int i=0; i<p->key.size(); i++) {
@@ -228,14 +262,14 @@ void BpTree<K, V>::remove(K x) {
                 auto posv = p->value.begin() + i;
                 p->key.erase(posk);
                 p->value.erase(posv);
-                removeKey(p, x, v);          
+                removeKey(p, x);          
             }
         }
     }
 }
 
 template<class K, class V>
-void BpTree<K, V>::removeKey(Node* p, K x, V v) {
+void BpTree<K, V>::removeKey(Node* p, K x) {
 
     // se passarmos por um nó que não é folha
     if (!p->leaf){
@@ -254,7 +288,7 @@ void BpTree<K, V>::removeKey(Node* p, K x, V v) {
     if (p == root && p->children.size() == 1) {
         // transformamos a primeira children em root
         root = p->children[0];
-        p->children.parent = nullptr;
+        p->children[0]->parent = nullptr;
         // e deletamos a root
         delete root;
         return;
@@ -271,9 +305,9 @@ void BpTree<K, V>::removeKey(Node* p, K x, V v) {
             Node* PrevNode = nullptr;
             Node* NextNode = nullptr;
             Node* ndash = nullptr;
-            K PrevK = NULL;
-            K NextK = NULL;
-            K value_ = NULL;
+            K PrevK;
+            K NextK;
+            K value_;
 
             // localiza a posição do nó em relação ao pai
             for (int i=0; i<parentNode->children.size(); i++) {
@@ -318,7 +352,7 @@ void BpTree<K, V>::removeKey(Node* p, K x, V v) {
                     ndash->children.push_back(p->children[i]);
                 }
                 if (!p->leaf) {
-                    ndash->key.append(value_);
+                    ndash->key.push_back(value_);
                 } else {
                     ndash->nextleaf = p->nextleaf;
                 }
@@ -332,7 +366,7 @@ void BpTree<K, V>::removeKey(Node* p, K x, V v) {
                         ndash->children[i]->parent = ndash;
                     }
                 }
-                removeKey(p->parent, value_, v);
+                removeKey(p->parent, value_);
                 delete p;
 
             } else { 
@@ -371,9 +405,9 @@ void BpTree<K, V>::removeKey(Node* p, K x, V v) {
                 } else {
                     if (!p->leaf) {
                         Node* ndashpn = ndash->children.front();
-                        ndash->children.pop_front();
+                        ndash->children.erase(ndash->children.begin());
                         K ndashkn = ndash->key.front();
-                        ndash->key.pop_front();
+                        ndash->key.erase(ndash->key.begin());
 
                         p->children.push_back(ndashpn);
                         p->key.push_back(ndashkn);
@@ -386,9 +420,9 @@ void BpTree<K, V>::removeKey(Node* p, K x, V v) {
                         }
                     } else {
                         Node* ndashpn = ndash->children.front();
-                        ndash->children.pop_front();
+                        ndash->children.erase(ndash->children.begin());
                         K ndashkn = ndash->key.front();
-                        ndash->key.pop_front();
+                        ndash->key.erase(ndash->key.begin());
 
                         p->children.push_back(ndashpn);
                         p->key.push_back(ndashkn);
