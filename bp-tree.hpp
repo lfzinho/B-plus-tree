@@ -459,3 +459,20 @@ void BpTree<K, V>::removeKey(Node* p, K x) {
         }
     }
 }
+
+template <class K, class V>
+void BpTree<K, V>::clear() {
+    clear(root);
+    root = nullptr;
+}
+
+template <class K, class V>
+void BpTree<K, V>::clear(Node* p) {
+    // Se p não for uma folha, deleta as children primeiro
+    if (!p->leaf) {
+        for(int i=0; i<p->children.size(); i++) {
+            clear(p->children[i]);
+        }
+    }
+    delete p;
+}

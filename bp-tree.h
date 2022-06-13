@@ -27,14 +27,22 @@ public:
     // Constructor
     explicit BpTree(int node_len);
 
+    // Retorna o valor associado a chave key
     V find(K x);
 
+    // retorna o valor dos nós no [k1, k2]
     vector<V> findRange(K k1, K k2);
 
+    // Inserta uma nova chave
     void insert(K x, V v);
 
+    // Remove uma chave
     void remove(K x);
 
+    // Limpa a árvore
+    void clear();
+
+    // Imprime a árvore
     void print();
 
     private:
@@ -49,6 +57,9 @@ public:
 
     // Remove a chave no nó p
     void removeKey(Node* p, K x);
+
+    // Limpa a árvore com função recursiva
+    void clear(Node* p);
 
     // Retorna posição de divisão do nó no split
     int getDivision();
