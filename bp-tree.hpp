@@ -468,11 +468,9 @@ void BpTree<K, V>::clear() {
 
 template <class K, class V>
 void BpTree<K, V>::clear(Node* p) {
-    // Se p não for uma folha, deleta as children primeiro
-    if (!p->leaf) {
-        for(int i=0; i<p->children.size(); i++) {
-            clear(p->children[i]);
-        }
+    // Primeiro deleta as children do nó
+    for(int i=0; i<p->children.size(); i++) {
+        clear(p->children[i]);
     }
     delete p;
 }
