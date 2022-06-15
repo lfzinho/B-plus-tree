@@ -30,7 +30,7 @@ public:
     // Retorna o valor associado a chave key
     V find(K x);
 
-    // retorna o valor dos nós no [k1, k2]
+    // retorna o valor dos nós no intervalo [k1, k2]
     vector<V> findRange(K k1, K k2);
 
     // Inserta uma nova chave

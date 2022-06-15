@@ -263,10 +263,6 @@ void BpTree<K, V>::remove(K x) {
                 p->value.erase(posv);
             } else {
                 // e estiver em outro nível, executa removeKey
-                auto posk = p->key.begin() + i;
-                auto posv = p->value.begin() + i;
-                p->key.erase(posk);
-                p->value.erase(posv);
                 removeKey(p, x);          
             }
         }
@@ -275,205 +271,34 @@ void BpTree<K, V>::remove(K x) {
 
 template<class K, class V>
 void BpTree<K, V>::removeKey(Node* p, K x) {
-
-    // se passarmos por um nó que não é folha
-    if (!p->leaf){
+    // se for um nó folha
+    if (p->leaf) {
+        // apaga a chave e o valor
         for (int i=0; i<p->key.size(); i++) {
-            // remove o valor do nó
             if (p->key[i] == x) {
-                auto posk = p->key.begin() + i;
-                p->key.erase(posk);
-            }
-        }
-    }
+                if (p == root) {
+                    auto posk = p->key.begin() + i;
+                    auto posv = p->value.begin() + i;
+                    p->key.erase(posk);
+                    p->value.erase(posv);
 
-    // se estivermos deletando a única chave na árvore
-    if (p == root && p->children.size() == 1) {
-        // transformamos a primeira children em root
-        root = p->children[0];
-        p->children[0]->parent = nullptr;
-        // e deletamos a root
-        delete root;
-        return;
-    }
-
-    // se o nó não for raiz
-    if (p != root) {
-
-        // limpa nullpointers 
-        for (int i=0; i<p->children.size(); i++) {
-            if (p->children[i] == nullptr) {
-                p->children.erase(p->children.begin()+i);
-            }
-        }
-
-        if ( (!(p->leaf) && (p->children.size() < getThreshold(p->leaf))) // se o nó não for folha e condição1
-        || ((p->leaf) && (p->key.size() < getThreshold(p->leaf))) // ou se o nó for folha e condição2
-        ) {
-            // Define variáveis auxiliares
-            bool is_predecessor = false;
-            Node* parentNode = p->parent;
-            Node* PrevNode = nullptr;
-            Node* NextNode = nullptr;
-            Node* ndash = nullptr;
-            K PrevK;
-            K NextK;
-            K value_;
-
-            // localiza a posição do nó em relação ao pai
-            for (int i=0; i<parentNode->children.size(); i++) {
-                if (parentNode->children[i] == p) {
-                    // i é a posição do nó
-                    if (i > 0) { // define prev node
-                        PrevNode = parentNode->children[i-1];
-                        PrevK = parentNode->key[i-1];
-                    }
-                    if ( i < parentNode->key.size() -1) { // define next node
-                        NextNode = parentNode->children[i+1];
-                        NextK = parentNode->key[i];
-                    }
-                    break;
-                }
-            }
-
-            if (PrevNode == nullptr) {
-                ndash = NextNode;
-                value_ = NextK;
-            } else if (NextNode == nullptr) {
-                is_predecessor = true;
-                ndash = PrevNode;
-                value_ = PrevK;
-            } else { // se tivermos next e prev, definimos ndash e value_
-                if (p->key.size() + NextNode->key.size() < node_len) {
-                    ndash = NextNode;
-                    value_ = NextK;
-                } else {
-                    is_predecessor = true;
-                    ndash = PrevNode;
-                    value_ = PrevK;
-                }
-            }
-            
-            // se for possível fazer um merge, fazemos isso
-            if (p->key.size() + ndash->key.size() < node_len) {
-                if (!is_predecessor) {
-                    Node* placeholder = p;
-                    p = ndash;
-                    ndash = placeholder;
-                }
-                for (int i=0; i<p->children.size(); i++) {
-                    ndash->children.push_back(p->children[i]);
-                }
-                if (!p->leaf) {
-                    ndash->key.push_back(value_);
-                } else {
-                    ndash->nextleaf = p->nextleaf;
-                }
-                for (int i=0; i<p->key.size(); i++) {
-                    ndash->key.push_back(p->key[i]);
-                }
-
-                if (!ndash->leaf) {
-                    // corrige os parentescos
-                    for (int i=0; i<ndash->children.size(); i++) {
-                        ndash->children[i]->parent = ndash;
-                    }
-                }
-                removeKey(p->parent, value_);
-
-                // remove o nó ndash da árvore
-                for(int i=0; i<parentNode->children.size(); i++) {
-                    if (parentNode->children[i] == ndash) {
-                        parentNode->children.erase(parentNode->children.begin()+i);
-                        break;
-                    }
-                }
-
-                delete p;
-
-            } else { // se não, fazemos um adopt
-                if (is_predecessor) {
-                    if (!p->leaf) {
-                        Node* ndashpn = ndash->children.back();
-                        ndash->children.pop_back();
-                        K ndashkn = ndash->key.back();
-                        ndash->key.pop_back();
-
-                        p->children.insert(p->children.begin(), ndashpn);
-                        p->key.insert(p->key.begin(), ndashkn);
-                        parentNode = p->parent;
-                        for (int i=0; i<parentNode->key.size(); i++) {
-                            if (parentNode->key[i] == value_) {
-                                parentNode->key[i] = ndashkn;
+                    // se o nó estiver vazio, apaga o nó
+                    if (p->key.size() == 0) {
+                        // resolve parentesco
+                        for (int j=0; j<p->parent->children.size(); j++) {
+                            if (p->parent->children[j] == p) {
+                                auto posc = p->parent->children.begin() + j;
+                                p->parent->children.erase(posc);
+                                auto posk = p->parent->key.begin() + j;
+                                p->parent->key.erase(posk);
                                 break;
                             }
                         }
-                    } else {
-                        Node* ndashpn = ndash->children.back();
-                        ndash->children.pop_back();
-                        K ndashkn = ndash->key.back();
-                        ndash->key.pop_back();
-
-                        p->children.insert(p->children.begin(), ndashpn);
-                        p->key.insert(p->key.begin(), ndashkn);
-                        parentNode = p->parent;
-                        for (int i=0; i<p->key.size(); i++) {
-                            if (parentNode->key[i] == value_) {
-                                parentNode->key[i] = ndashkn;
-                                break;
-                            }
-                        }
+                        delete p;
                     }
-                } else {
-                    if (!p->leaf) {
-                        Node* ndashpn = ndash->children.front();
-                        ndash->children.erase(ndash->children.begin());
-                        K ndashkn = ndash->key.front();
-                        ndash->key.erase(ndash->key.begin());
-
-                        p->children.push_back(ndashpn);
-                        p->key.push_back(ndashkn);
-                        parentNode = p->parent;
-                        for (int i=0; i<parentNode->key.size(); i++) {
-                            if (parentNode->key[i] == value_) {
-                                parentNode->key[i] = ndashkn;
-                                break;
-                            }
-                        }
-                    } else {
-                        Node* ndashpn = ndash->children.front();
-                        ndash->children.erase(ndash->children.begin());
-                        K ndashkn = ndash->key.front();
-                        ndash->key.erase(ndash->key.begin());
-
-                        p->children.push_back(ndashpn);
-                        p->key.push_back(ndashkn);
-                        parentNode = p->parent;
-                        for (int i=0; i<parentNode->key.size(); i++) {
-                            if (parentNode->key[i] == value_) {
-                                parentNode->key[i] = ndashkn;
-                                break;
-                            }
-                        }
-                    }
+                    return;
                 }
-            
-                if (!ndash->leaf) {
-                    for (int i=0; i<ndash->children.size(); i++) {
-                        ndash->children[i]->parent = ndash;
-                    }
-                }
-                if (!p->leaf) {
-                    for (int i=0; i<p->children.size(); i++) {
-                        p->children[i]->parent = p;
-                    }
-                }
-                if (!parentNode->leaf) {
-                    for (int i=0; i<parentNode->children.size(); i++) {
-                        parentNode->children[i]->parent = parentNode;
-                    }
-                }
-            } 
+            }
         }
     }
 }
