@@ -24,14 +24,15 @@ BpTree<K, V>::BpTree(int node_len) {
 template<class K, class V>
 V BpTree<K, V>::find(K x) {
     Node* p = searchNode(x);
-    if (p == nullptr) return NULL;
+    if (p == nullptr) throw "Empty tree";
     // procura pela chave no nó ideal
     for (int i=0; i < p->key.size(); i++) {
         if (x == p->key[i]) {
             return p->value[i];
         }
     }
-    return NULL;
+    throw "Key not found";
+    return 0;
 }
 
 template<class K, class V>
@@ -109,12 +110,11 @@ typename BpTree<K, V>::Node* BpTree<K, V>::searchNode(K x) {
     Node* p = root;
     while (p != nullptr && !p->leaf) {
         for (int i=0; i<p->key.size(); i++) {
-            if (x < p->key[i]) {
+            if (x <= p->key[i]) {
                 // se o valor é menor que o nó atual
                 p = p->children[i];
                 break;
-            } else if ((x == p->key[i])||(i+1 == p->key.size())){
-                // se o valor é igual ao nó atual
+            } else if (i+1 == p->key.size()){
                 // ou se chegamos ao final do nó
                 p = p->children[i+1];
                 break;
@@ -276,28 +276,26 @@ void BpTree<K, V>::removeKey(Node* p, K x) {
         // apaga a chave e o valor
         for (int i=0; i<p->key.size(); i++) {
             if (p->key[i] == x) {
-                if (p == root) {
-                    auto posk = p->key.begin() + i;
-                    auto posv = p->value.begin() + i;
-                    p->key.erase(posk);
-                    p->value.erase(posv);
+                auto posk = p->key.begin() + i;
+                auto posv = p->value.begin() + i;
+                p->key.erase(posk);
+                p->value.erase(posv);
 
-                    // se o nó estiver vazio, apaga o nó
-                    if (p->key.size() == 0) {
-                        // resolve parentesco
-                        for (int j=0; j<p->parent->children.size(); j++) {
-                            if (p->parent->children[j] == p) {
-                                auto posc = p->parent->children.begin() + j;
-                                p->parent->children.erase(posc);
-                                auto posk = p->parent->key.begin() + j;
-                                p->parent->key.erase(posk);
-                                break;
-                            }
+                // se o nó estiver vazio, apaga o nó
+                if (p->key.size() == 0) {
+                    // resolve parentesco
+                    for (int j=0; j<p->parent->children.size(); j++) {
+                        if (p->parent->children[j] == p) {
+                            auto posc = p->parent->children.begin() + j;
+                            p->parent->children.erase(posc);
+                            auto posk = p->parent->key.begin() + j;
+                            p->parent->key.erase(posk);
+                            break;
                         }
-                        delete p;
                     }
-                    return;
+                    delete p;
                 }
+                return;
             }
         }
     }
